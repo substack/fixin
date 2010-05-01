@@ -81,29 +81,30 @@ $prefs{tabstop} = $ARGV{"--tabstop"} // $prefs{tabstop} // $prefs{ts};
 
 exit if $prefs{expandtab} == $modes{expandtab} and $prefs{tabstop} == $modes{tabstop};
 
-if ($ARGV{"--convert"}) {
-    for my $line (@file) {
-        if ($prefs{expandtab}) {
-            my $spaces = " " x $prefs{tabstop};
-            1 while $line =~ s/^(\s*?)\t/$1$spaces/;
-        }
-        else {
-            my $spaces = " " x $modes{tabstop};
-            1 while $line =~ s/^(\s*?)$spaces/$1\t/
-        }
+if ($ARGV{"--restore"}) {
+    # convert backwards for resets
+    my $prefs_r = { %prefs };
+    my $modes_r = { %modes };
+    %modes = %$prefs_r;
+    %prefs = %$modes_r;
+}
+
+(tied @file)->defer;
+for my $line (@file) {
+    if ($prefs{expandtab}) {
+        my $mspaces = " " x $modes{tabstop};
+        my $pspaces = " " x $prefs{tabstop};
+        
+        1 while $line =~ s/^(\s*?)\t/$1$mspaces/;
+        
+        $line =~ s[^((?:$mspaces)+)]
+            [ " "x ((length $1) * $modes{tabstop} / $prefs{tabstop}) ]e;
+    }
+    else {
+        my $spaces = " " x $prefs{tabstop};
+        1 while $line =~ s/^(\s*?)$spaces/$1\t/
     }
 }
-else { # restore
-    for my $line (@file) {
-        if ($modes{expandtab}) {
-            my $spaces = " " x $modes{tabstop};
-            1 while $line =~ s/^(\s*?)\t/$1$spaces/;
-        }
-        else {
-            my $spaces = " " x $prefs{tabstop};
-            1 while $line =~ s/^(\s*?)$spaces/$1\t/;
-        }
-    }
-}
+(tied @file)->flush;
 
 END { untie @file; }
