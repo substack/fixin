@@ -7,16 +7,28 @@ use strict;
 use 5.10.0;
 use Getopt::Casual;
 
-my $usage = "Usage: $0 ( --convert | --restore ) OPTIONS file
-    Convert and restore files with vi modelines to your preferred indentation
-        style and back to the original formatting.
-    For now, it only converts leading whitespace.
+my $usage = "Usage:
+    $0 --git-add patterns
+    $0 --git-rm patterns
+        
+        Configure a git repository to filter patters
+        Must be within a git directory hierarchy.
+        
+        Examples:
+            $0 --git-add *.js *.pl
+            $0 --git-rm *.c blarg.c
     
-    Where OPTIONS are:
-        --vimrc=file - the location of the vimrc file to use
-            default: \$HOME/.vimrc
-        --et, --expandtab - expand tab preference; overrides vimrc
-        --ts, --tabstop - tab stop preference; overrides vimrc
+    $0 ( --convert | --restore ) OPTIONS file
+        
+        Convert and restore files with vi modelines to your preferred
+        indentation style and back to the original formatting.
+        For now, it only converts leading whitespace.
+    
+        Where OPTIONS are:
+            --vimrc=file - the location of the vimrc file to use
+                default: \$HOME/.vimrc
+            --et, --expandtab - expand tab preference; overrides vimrc
+            --ts, --tabstop - tab stop preference; overrides vimrc
 ";
 $ARGV{"--convert"} or $ARGV{"--restore"} or die $usage;
 $ARGV{"--vimrc"} //= "$ENV{HOME}/.vimrc";
