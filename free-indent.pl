@@ -20,7 +20,7 @@ my $usage = "Usage:
             $0 --git-add *.js *.pl
             $0 --git-rm *.c blarg.c
     
-    $0 ( --convert | --restore ) OPTIONS file
+    $0 ( --convert | --restore ) OPTIONS ( file | - )
         
         Convert and restore files with vi modelines to your preferred
         indentation style and back to the original formatting.
@@ -74,9 +74,17 @@ $ARGV{"--convert"} or $ARGV{"--restore"} or die $usage;
 $ARGV{"--vimrc"} //= "$ENV{HOME}/.vimrc";
 
 use Tie::File;
-my $filename = shift // die $usage;
-tie my @file, 'Tie::File', $filename
-    or die "Couldn't open '$filename' failed: $!";
+my $filename = shift // "-";
+
+my @file;
+if ($filename eq "-") {
+    @file = <>;
+}
+else {
+    tie @file, 'Tie::File', $filename
+        or die "Couldn't open '$filename' failed: $!";
+}
+
 @file or exit; # don't mess with empty files
 
 # Formatting for modelines is documented here:
@@ -104,7 +112,11 @@ for my $opts (grep defined, map $_ =~ $re, grep defined, @file[0..4]) {
         last;
     }
 }
-%modes // exit; # only process when modeline is found
+%modes || do {
+    # only process when modeline is found
+    print for grep defined, @file;
+    exit;
+};
 
 # short-form aliases
 $modes{tabstop} //= $modes{ts} // 8;
@@ -131,7 +143,11 @@ unless (defined $ARGV{"--expandtab"} and defined $ARGV{"--tabstop"}) {
 $prefs{expandtab} = $ARGV{"--expandtab"} // $prefs{expandtab} // $prefs{et};
 $prefs{tabstop} = $ARGV{"--tabstop"} // $prefs{tabstop} // $prefs{ts};
 
-exit if $prefs{expandtab} == $modes{expandtab} and $prefs{tabstop} == $modes{tabstop};
+if ($prefs{expandtab} == $modes{expandtab}
+and $prefs{tabstop} == $modes{tabstop}) {
+    print for grep defined, @file;
+    exit;
+}
 
 if ($ARGV{"--restore"}) {
     # convert backwards for resets
@@ -141,8 +157,8 @@ if ($ARGV{"--restore"}) {
     %prefs = %$modes_r;
 }
 
-(tied @file)->defer;
-for my $line (@file) {
+(tied @file)->defer if $filename ne "-";
+for my $line (grep defined, @file) {
     if ($prefs{expandtab}) {
         my $mspaces = " " x $modes{tabstop};
         my $pspaces = " " x $prefs{tabstop};
@@ -157,6 +173,11 @@ for my $line (@file) {
         1 while $line =~ s/^(\s*?)$spaces/$1\t/
     }
 }
-(tied @file)->flush;
+(tied @file)->flush if $filename ne "-";
 
-untie @file;
+if ($filename eq "-") {
+    print for grep defined, @file;
+}
+else {
+    untie @file;
+}
