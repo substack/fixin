@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# James Halliday (http://substack.net)
 # vim:ts=4:sw=4:tw=80:et
 use warnings;
 use strict;
@@ -23,11 +24,22 @@ my $re = qr{
     (?: (?: set | se\  ) (.+) : | (.+) )
 }x;
 
-for my $opts (grep defined, map $_ =~ $re, @file[0..4]) {
-    if (my @mods = split m/(?<! \\) [:\ ] \s* (?: set \s*)? /x, $opts) {
-        print "mods=", join(",", @mods), "\n";
+my %set;
+for my $opts (grep defined, map $_ =~ $re, grep defined, @file[0..4]) {
+    if (my @modes = split m/(?<! \\) [:\ ] \s* (?: set \s*)? /x, $opts) {
+        %set = map {
+            if (m/(?<! \\) = /x) {
+                m/([^=]+)=(.+)/ # assignment
+            }
+            else {
+                (my $flag = $_) =~ s/^no//;
+                $flag => m/^no/ ? 0 : 1 # boolean flags
+            }
+        } @modes;
+        last;
     }
 }
+%set // exit;
 
 untie @file;
 
