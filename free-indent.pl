@@ -119,7 +119,7 @@ for my $opts (grep defined, map $_ =~ $re, grep defined, @file[0..4]) {
 };
 
 # short-form aliases
-$modes{tabstop} //= $modes{ts} // 8;
+$modes{tabstop} = int($modes{tabstop} // $modes{ts} // 8);
 $modes{expandtab} //= $modes{et} // 0;
 $ARGV{"--expandtab"} //= $ARGV{"--et"};
 $ARGV{"--tabstop"} //= $ARGV{"--ts"};
@@ -141,7 +141,7 @@ unless (defined $ARGV{"--expandtab"} and defined $ARGV{"--tabstop"}) {
 }
 
 $prefs{expandtab} = $ARGV{"--expandtab"} // $prefs{expandtab} // $prefs{et};
-$prefs{tabstop} = $ARGV{"--tabstop"} // $prefs{tabstop} // $prefs{ts};
+$prefs{tabstop} = int($ARGV{"--tabstop"} // $prefs{tabstop} // $prefs{ts} // 8);
 
 if ($prefs{expandtab} == $modes{expandtab}
 and $prefs{tabstop} == $modes{tabstop}) {
@@ -166,10 +166,10 @@ for my $line (grep defined, @file) {
         1 while $line =~ s/^(\s*?)\t/$1$mspaces/;
         
         $line =~ s[^((?:$mspaces)+)]
-            [ " "x ((length $1) * $prefs{tabstop} / $modes{tabstop}) ]e;
+            [ $pspaces x ((length $1) / $modes{tabstop}) ]e;
     }
     else {
-        my $spaces = " " x $prefs{tabstop};
+        my $spaces = " " x $modes{tabstop};
         1 while $line =~ s/^(\s*?)$spaces/$1\t/
     }
 }
