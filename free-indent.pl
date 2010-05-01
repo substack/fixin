@@ -98,7 +98,7 @@ for my $line (@file) {
         1 while $line =~ s/^(\s*?)\t/$1$mspaces/;
         
         $line =~ s[^((?:$mspaces)+)]
-            [ " "x ((length $1) * $modes{tabstop} / $prefs{tabstop}) ]e;
+            [ " "x ((length $1) * $prefs{tabstop} / $modes{tabstop}) ]e;
     }
     else {
         my $spaces = " " x $prefs{tabstop};
