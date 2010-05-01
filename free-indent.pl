@@ -43,17 +43,17 @@ if (grep /^--git-/, keys %ARGV) {
     
     if ($ARGV{"--git-ls"} or $ARGV{"--git-list"}) {
         print "$_\n" for grep defined, map m{
-            ^ (\S+) \s+ filter=free-indent
+            ^ (\S+) \s+ filter=freeindent
         }x, @attrs;
     }
     elsif ($ARGV{"--git-add"}) {
         for my $pat (grep { $_ ne "1" } @ARGV) {
-            push @attrs, "$pat filter=free-indent";
+            push @attrs, "$pat filter=freeindent";
         }
     }
     elsif ($ARGV{"--git-rm"}) {
         @attrs = grep {
-            if (my ($pat) = $_ =~ m/^(\S+) \s+ filter=free-indent/) {
+            if (my ($pat) = $_ =~ m/^(\S+) \s+ filter=freeindent/) {
                 grep { $_ ne "1" and $_ eq $pat } @ARGV;
             }
             else {
@@ -62,8 +62,8 @@ if (grep /^--git-/, keys %ARGV) {
         } @attrs;
     }
     elsif ($ARGV{"--git-config"}) {
-        system qq{ git config --global filter.free-indent.smudge '$0 --convert' };
-        system qq{ git config --global filter.free-indent.clean '$0 --restore' };
+        system qq{ git config --global filter.freeindent.smudge '$0 --convert' };
+        system qq{ git config --global filter.freeindent.clean '$0 --restore' };
     }
     
     untie @attrs;
