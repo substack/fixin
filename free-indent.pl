@@ -10,6 +10,7 @@ use Getopt::Casual;
 my $usage = "Usage:
     $0 --git-add patterns
     $0 --git-rm patterns
+    $0 --git-ls, $0 --git-list
         
         Configure a git repository to filter patters
         Must be within a git directory hierarchy.
@@ -31,15 +32,36 @@ my $usage = "Usage:
             --ts, --tabstop - tab stop preference; overrides vimrc
 ";
 
-if ($ARGV{"--git-add"} or $ARGV{"--git-rm"}) {
+if (grep /^--git-/, keys %ARGV) {
     use Cwd qw/getcwd/;
     chdir ".." until -d ".git" or getcwd eq "/";
     getcwd ne "/" or die "Not in a git project directory\n";
     
-    if ($ARGV{"--git-add"}) {
+    tie my @attrs, "Tie::File", ".git/info/attributes"
+        or die "Couldn't open .git/info/attributes: $!";
+    
+    if ($ARGV{"--git-ls"} or $ARGV{"--git-list"}) {
+        print "$_\n" for grep defined, map m{
+            ^ (\S+) \s+ filter=free-indent
+        }x, @attrs;
+    }
+    elsif ($ARGV{"--git-add"}) {
+        for my $pat (grep { $_ ne "1" } @ARGV) {
+            push @attrs, "$pat filter=free-indent";
+        }
     }
     elsif ($ARGV{"--git-rm"}) {
+        @attrs = grep {
+            if (my ($pat) = $_ =~ m/^(\S+) \s+ filter=free-indent/) {
+                grep { $_ ne "1" and $_ eq $pat } @ARGV;
+            }
+            else {
+                undef
+            }
+        } @attrs;
     }
+    
+    untie @attrs;
     exit;
 }
 
@@ -132,4 +154,4 @@ for my $line (@file) {
 }
 (tied @file)->flush;
 
-END { untie @file; }
+untie @file;
