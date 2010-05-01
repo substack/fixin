@@ -11,6 +11,7 @@ my $usage = "Usage:
     $0 --git-add patterns
     $0 --git-rm patterns
     $0 --git-ls, $0 --git-list
+    $0 --git-config
         
         Configure a git repository to filter patters
         Must be within a git directory hierarchy.
@@ -59,6 +60,10 @@ if (grep /^--git-/, keys %ARGV) {
                 undef
             }
         } @attrs;
+    }
+    elsif ($ARGV{"--git-config"}) {
+        system qq{ git config --global filter.free-indent.smudge '$0 --convert' };
+        system qq{ git config --global filter.free-indent.clean '$0 --restore' };
     }
     
     untie @attrs;
