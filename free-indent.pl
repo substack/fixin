@@ -13,11 +13,12 @@ my $usage = "Usage: $0 ( --convert | --restore ) OPTIONS file
     
     Where OPTIONS are:
         --vimrc=file - the location of the vimrc file to use
-            default: ~/.vimrc
+            default: \$HOME/.vimrc
         --et, --expandtab - expand tab preference; overrides vimrc
         --ts, --tabstop - tab stop preference; overrides vimrc
 ";
-$ARGV{"--indent"} or $ARGV{"--unindent"} or die $usage;
+$ARGV{"--convert"} or $ARGV{"--restore"} or die $usage;
+$ARGV{"--vimrc"} //= "$ENV{HOME}/.vimrc";
 
 use Tie::File;
 my $filename = shift // die $usage;
@@ -35,10 +36,10 @@ my $re = qr{
     (?: (?: set | se\  ) (.+) : | (.+) )
 }x;
 
-my %set;
+my %modes;
 for my $opts (grep defined, map $_ =~ $re, grep defined, @file[0..4]) {
-    if (my @modes = split m/(?<! \\) [:\ ] \s* (?: set \s*)? /x, $opts) {
-        %set = map {
+    if (my @params = split m/(?<! \\) [:\ ] \s* (?: set \s*)? /x, $opts) {
+        %modes = map {
             if (m/(?<! \\) = /x) {
                 m/([^=]+)=(.+)/ # assignment
             }
@@ -46,26 +47,48 @@ for my $opts (grep defined, map $_ =~ $re, grep defined, @file[0..4]) {
                 (my $flag = $_) =~ s/^no//;
                 $flag => m/^no/ ? 0 : 1 # boolean flags
             }
-        } @modes;
+        } @params;
         last;
     }
 }
-%set // exit; # only process when modeline is found
+%modes // exit; # only process when modeline is found
 
 # short-form aliases
-$set{tabstop} //= $set{ts};
-$set{expandtab} //= $set{et};
+$modes{tabstop} //= $modes{ts} // 8;
+$modes{expandtab} //= $modes{et} // 0;
+$ARGV{"--expandtab"} //= $ARGV{"--et"};
+$ARGV{"--tabstop"} //= $ARGV{"--ts"};
 
-# vim:ts=4:sw=4:tw=80:et
-use Text::Indent;
-my $indent = Text::Indent->new(
-    SpaceChar => $set{expandtab} ? " " : "\t",
-    Spaces => ($set{expandtab} ? $set{tabstop} // 8 : 1),
-    AddNewLine => 0,
-);
+my %prefs;
 
-for my $line (@file) {
-    # ...
+unless (defined $ARGV{"--expandtab"} and defined $ARGV{"--tabstop"}) {
+    tie my @vimrc, "Tie::File", $ARGV{"--vimrc"} or die "Couldn't open vimrc: $!";
+    %prefs = map {
+        if (m/(?<! \\) =/x) {
+            m/([^=]+)=(.+)/ # assignment
+        }
+        else {
+            (my $flag = $_) =~ s/^no//;
+            $flag => m/^no/ ? 0 : 1 # boolean flags
+        }
+    } grep defined, map m/^set \s+ (.+)/x, @vimrc;
+    untie @vimrc;
 }
 
-untie @file;
+$prefs{expandtab} = $ARGV{"--expandtab"} // $prefs{expandtab} // $prefs{et};
+$prefs{tabstop} = $ARGV{"--tabstop"} // $prefs{tabstop} // $prefs{ts};
+
+exit if $prefs{expandtab} == $modes{expandtab} and $prefs{tabstop} == $modes{tabstop};
+
+if ($ARGV{"--convert"}) {
+    for my $line (@file) {
+        if ($prefs{expandtab}) {
+            my $spaces = " " x $prefs{tabstop};
+            $line =~ s/\t/$spaces/g;
+        }
+    }
+}
+else { # restore
+}
+
+END { untie @file; }
