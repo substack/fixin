@@ -86,9 +86,23 @@ if ($ARGV{"--convert"}) {
             my $spaces = " " x $prefs{tabstop};
             $line =~ s/\t/$spaces/g;
         }
+        else {
+            my $spaces = " " x $modes{tabstop};
+            $line =~ s/$spaces/\t/g;
+        }
     }
 }
 else { # restore
+    for my $line (@file) {
+        if ($modes{expandtab}) {
+            my $spaces = " " x $modes{tabstop};
+            $line =~ s/\t/$spaces/g;
+        }
+        else {
+            my $spaces = " " x $prefs{tabstop};
+            $line =~ s/$spaces/\t/g;
+        }
+    }
 }
 
 END { untie @file; }
