@@ -9,7 +9,8 @@ use Getopt::Casual;
 
 my $usage = "Usage: $0 ( --convert | --restore ) OPTIONS file
     Convert and restore files with vi modelines to your preferred indentation
-    style and back to the original formatting.
+        style and back to the original formatting.
+    For now, it only converts leading whitespace.
     
     Where OPTIONS are:
         --vimrc=file - the location of the vimrc file to use
@@ -84,11 +85,11 @@ if ($ARGV{"--convert"}) {
     for my $line (@file) {
         if ($prefs{expandtab}) {
             my $spaces = " " x $prefs{tabstop};
-            $line =~ s/\t/$spaces/g;
+            1 while $line =~ s/^(\s*?)\t/$1$spaces/;
         }
         else {
             my $spaces = " " x $modes{tabstop};
-            $line =~ s/$spaces/\t/g;
+            1 while $line =~ s/^(\s*?)$spaces/$1\t/
         }
     }
 }
@@ -96,11 +97,11 @@ else { # restore
     for my $line (@file) {
         if ($modes{expandtab}) {
             my $spaces = " " x $modes{tabstop};
-            $line =~ s/\t/$spaces/g;
+            1 while $line =~ s/^(\s*?)\t/$1$spaces/;
         }
         else {
             my $spaces = " " x $prefs{tabstop};
-            $line =~ s/$spaces/\t/g;
+            1 while $line =~ s/^(\s*?)$spaces/$1\t/;
         }
     }
 }
