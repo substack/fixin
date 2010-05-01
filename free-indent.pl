@@ -30,6 +30,19 @@ my $usage = "Usage:
             --et, --expandtab - expand tab preference; overrides vimrc
             --ts, --tabstop - tab stop preference; overrides vimrc
 ";
+
+if ($ARGV{"--git-add"} or $ARGV{"--git-rm"}) {
+    use Cwd qw/getcwd/;
+    chdir ".." until -d ".git" or getcwd eq "/";
+    getcwd ne "/" or die "Not in a git project directory\n";
+    
+    if ($ARGV{"--git-add"}) {
+    }
+    elsif ($ARGV{"--git-rm"}) {
+    }
+    exit;
+}
+
 $ARGV{"--convert"} or $ARGV{"--restore"} or die $usage;
 $ARGV{"--vimrc"} //= "$ENV{HOME}/.vimrc";
 
