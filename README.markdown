@@ -66,9 +66,15 @@ will do the trick.
 
 After these steps, make commits, merges, pulls, and whatever else as usual.
 
+Author
+======
+James Halliday (mail@substack.net)
+
+[The Universe of Discord](http://substack.net)
+
 See Also
 ========
 
-http://vimdoc.sourceforge.net/htmldoc/options.html#auto-setting
+[vim manual entry about modelines](http://vimdoc.sourceforge.net/htmldoc/options.html#auto-setting)
 
-http://stackoverflow.com/questions/2316677/can-git-automatically-switch-between-spaces-and-tabs
+[info about git filters on stackoverflow]([http://stackoverflow.com/questions/2316677/can-git-automatically-switch-between-spaces-and-tabs)
