@@ -1,58 +1,89 @@
 #!/usr/bin/env perl
-# git-fixin - automatically convert indentation to your preferred format
+# git-fixin - automatically convert indentation to your preferred format on
+#     check-out and back to the original formatting on check-in
 # James Halliday (http://substack.net)
 # vim:ts=4:sw=4:tw=80:et
+
+# TODO:
+# * pattern exceptions
+# * per-repository rc files to use
 
 use warnings;
 use strict;
 use 5.10.0;
-use Getopt::Casual;
 
-my $usage = "
-    Configure a git repository to use free-indent.
+use File::Spec;
+my $bin_path = File::Spec->rel2abs($0);
+
+my $usage = <<EOF;
+    Configure a git repository to automatially convert between your indentation
+    preference when you check out files and back to the original formatting when
+    you check in.
+    
+    The project's .git/info/attributes file is modified by this program.
+    The syntax for PATTERNS is available in more detail by consulting
+        `git help attributes`.
+    
+    Where --filter appears below, it refers to the filter name to use.
+        It defaults to 'fixin'.
     
     Usage:
-        $0 add patterns
+        $0 add PATTERNS
+            Register PATTERNS to use the indentation filter on.
+            Files are specified by attribute patterns, so *.js will add all js
+            files in all directories.
             
             Example:
-                $0 add *.js *.pl foo/bar/baz/quux.c
+                $0 add \\*.pl
+                $0 add \\*.hs \\*.lhs
+                $0 add foo/bar/baz/quux.c
+            
+            Tip: use \\* instead of * to register a pattern so your shell
+            doesn't expand paths if files in the current directory match.
+        
+        $0 remove patterns
         $0 rm patterns
+            Unregister a previously added pattern.
             
             Example:
-                $0 rm *.c blarg.c
-        $0 ls
+                $0 add \\*.c
+                $0 rm \\*.c
             
-        $0 config OPTIONS
+            Tip: use \\* instead of * to register a pattern so your shell
+            doesn't expand paths if files in the current directory match.
         
-        Configure a git repository to filter patters
-        Must be within a git directory hierarchy.
+        $0 list
+        $0 ls
+            Show the patterns in the attribute file.
         
-        Examples:
-";
+        $0 install { --filter=FILTER, --global }
+        
+            Install the indentation filter into the project configuration. This
+            only needs to be done once for each project, or one globally with
+            --global.
+EOF
 
-@ARGV or die $usage;
-grep /^--git-/, keys %ARGV or die $usage;
+use Getopt::Casual;
+my $cmd = shift or die $usage;
 
 use Cwd qw/getcwd/;
 chdir ".." until -d ".git" or getcwd eq "/";
 getcwd ne "/" or die "Not in a git project directory\n";
 
+use Tie::File;
 tie my @attrs, "Tie::File", ".git/info/attributes"
     or die "Couldn't open .git/info/attributes: $!";
 
-if ($ARGV{"--git-ls"} or $ARGV{"--git-list"}) {
-    print "$_\n" for grep defined, map m{
-        ^ (\S+) \s+ filter=freeindent
-    }x, @attrs;
-}
-elsif ($ARGV{"--git-add"}) {
+$ARGV{"--filter"} //= "fixin";
+
+if ($ARGV{"add"}) {
     for my $pat (grep { $_ ne "1" } @ARGV) {
-        push @attrs, "$pat filter=freeindent";
+        push @attrs, "$pat filter=$ARGV{q/--filter/}";
     }
 }
-elsif ($ARGV{"--git-rm"}) {
+elsif ($cmd eq "rm" or $cmd eq "remove") {
     @attrs = grep {
-        if (my ($pat) = $_ =~ m/^(\S+) \s+ filter=freeindent/) {
+        if (my ($pat) = $_ =~ m/^(\S+) \s+ filter=$ARGV{q[--filter]}/) {
             grep { $_ ne "1" and $_ eq $pat } @ARGV;
         }
         else {
@@ -60,9 +91,32 @@ elsif ($ARGV{"--git-rm"}) {
         }
     } @attrs;
 }
-elsif ($ARGV{"--git-config"}) {
-    system qq{ git config --global filter.freeindent.smudge '$0 --convert' };
-    system qq{ git config --global filter.freeindent.clean '$0 --restore' };
+elsif ($cmd eq "list" or $cmd eq "ls") {
+    print "$_\n" for grep defined, map m{
+        ^ (\S+) \s+ filter=$ARGV{q[--filter]}
+    }x, @attrs;
+}
+elsif ($cmd eq "install") {
+    my @global = $ARGV{"--global"} ? "--global" : ();
+    
+    # because of duplicate entries, unset first
+    system qw/git config --unset-all/, @global,
+        "filter.$ARGV{q[--filter]}.smudge";
+    system qw/git config --unset-all/, @global,
+        "filter.$ARGV{q[--filter]}.clean";
+    
+    # then set
+    system qw/git config --add/, @global,
+        "filter.$ARGV{q[--filter]}.smudge", "'$bin_path --convert'";
+    system qw/git config --add/, @global,
+        "filter.$ARGV{q[--filter]}.clean", "'$bin_path --restore'";
+}
+elsif ($cmd eq "uninstall") {
+    system qw/git config --remove-section/, "filter.$ARGV{q[--filter]}",
+        ($ARGV{"--global"} ? "--global" : ());
+}
+else {
+    die $usage;
 }
 
 untie @attrs;
