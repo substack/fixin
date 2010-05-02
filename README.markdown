@@ -77,4 +77,4 @@ See Also
 
 [vim manual entry about modelines](http://vimdoc.sourceforge.net/htmldoc/options.html#auto-setting)
 
-[info about git filters on stackoverflow]([http://stackoverflow.com/questions/2316677/can-git-automatically-switch-between-spaces-and-tabs)
+[info about git filters on stackoverflow](http://stackoverflow.com/questions/2316677/can-git-automatically-switch-between-spaces-and-tabs)
