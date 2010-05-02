@@ -15,6 +15,11 @@ stepping on anybody's toes.
 This project uses git filters and ~/.vimrc. It doesn't actually use vim, so you
 can use any text editor so long as you've got a ~/.vimrc.
 
+Installation
+============
+    Put fixin and git-fixin in your $PATH.
+    You'll need perl 5.10 or later and Getopt::Casual from cpan.
+
 Example
 =======
     git clone git://github.com/substack/fixin.git
