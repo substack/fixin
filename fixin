@@ -54,6 +54,7 @@ if ($filename eq "-") {
     @file = <>;
 }
 else {
+    -e $filename or die "File '$filename' doesn't exist";
     tie @file, 'Tie::File', $filename
         or die "Couldn't open '$filename' failed: $!";
 }
