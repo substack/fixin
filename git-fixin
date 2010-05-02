@@ -8,13 +8,13 @@
 # * pattern exceptions
 # * per-repository rc files to use
 # * POD
+# * help in $PAGER
 
 use warnings;
 use strict;
 use 5.10.0;
 
 use File::Spec;
-my $bin_path = File::Spec->rel2abs($0);
 
 my $usage = <<EOF;
     Configure a git repository to automatially convert between your indentation
@@ -108,9 +108,9 @@ elsif ($cmd eq "install") {
     
     # then set
     system qw/git config --add/, @global,
-        "filter.$ARGV{q[--filter]}.smudge", "'$bin_path --convert'";
+        "filter.$ARGV{q[--filter]}.smudge", "'fixin --convert'";
     system qw/git config --add/, @global,
-        "filter.$ARGV{q[--filter]}.clean", "'$bin_path --restore'";
+        "filter.$ARGV{q[--filter]}.clean", "'fixin --restore'";
 }
 elsif ($cmd eq "uninstall") {
     system qw/git config --remove-section/, "filter.$ARGV{q[--filter]}",
