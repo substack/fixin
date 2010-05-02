@@ -8,18 +8,6 @@ use 5.10.0;
 use Getopt::Casual;
 
 my $usage = "Usage:
-    $0 --git-add patterns
-    $0 --git-rm patterns
-    $0 --git-ls, $0 --git-list
-    $0 --git-config
-        
-        Configure a git repository to filter patters
-        Must be within a git directory hierarchy.
-        
-        Examples:
-            $0 --git-add *.js *.pl
-            $0 --git-rm *.c blarg.c
-    
     $0 ( --convert | --restore ) OPTIONS ( file | - )
         
         Convert and restore files with vi modelines to your preferred
@@ -32,43 +20,6 @@ my $usage = "Usage:
             --et, --expandtab - expand tab preference; overrides vimrc
             --ts, --tabstop - tab stop preference; overrides vimrc
 ";
-
-if (grep /^--git-/, keys %ARGV) {
-    use Cwd qw/getcwd/;
-    chdir ".." until -d ".git" or getcwd eq "/";
-    getcwd ne "/" or die "Not in a git project directory\n";
-    
-    tie my @attrs, "Tie::File", ".git/info/attributes"
-        or die "Couldn't open .git/info/attributes: $!";
-    
-    if ($ARGV{"--git-ls"} or $ARGV{"--git-list"}) {
-        print "$_\n" for grep defined, map m{
-            ^ (\S+) \s+ filter=freeindent
-        }x, @attrs;
-    }
-    elsif ($ARGV{"--git-add"}) {
-        for my $pat (grep { $_ ne "1" } @ARGV) {
-            push @attrs, "$pat filter=freeindent";
-        }
-    }
-    elsif ($ARGV{"--git-rm"}) {
-        @attrs = grep {
-            if (my ($pat) = $_ =~ m/^(\S+) \s+ filter=freeindent/) {
-                grep { $_ ne "1" and $_ eq $pat } @ARGV;
-            }
-            else {
-                undef
-            }
-        } @attrs;
-    }
-    elsif ($ARGV{"--git-config"}) {
-        system qq{ git config --global filter.freeindent.smudge '$0 --convert' };
-        system qq{ git config --global filter.freeindent.clean '$0 --restore' };
-    }
-    
-    untie @attrs;
-    exit;
-}
 
 $ARGV{"--convert"} or $ARGV{"--restore"} or die $usage;
 $ARGV{"--vimrc"} //= "$ENV{HOME}/.vimrc";
@@ -169,7 +120,7 @@ for my $line (grep defined, @file) {
             [ $pspaces x ((length $1) / $modes{tabstop}) ]e;
     }
     else {
-        my $spaces = " " x $modes{tabstop};
+        my $spaces = " " x $prefs{tabstop};
         1 while $line =~ s/^(\s*?)$spaces/$1\t/
     }
 }

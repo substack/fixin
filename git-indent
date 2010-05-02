@@ -1,0 +1,43 @@
+#!/usr/bin/env perl
+use warnings;
+use strict;
+use 5.10.0;
+use Getopt::Casual;
+
+if (grep /^--git-/, keys %ARGV) {
+    use Cwd qw/getcwd/;
+    chdir ".." until -d ".git" or getcwd eq "/";
+    getcwd ne "/" or die "Not in a git project directory\n";
+    
+    tie my @attrs, "Tie::File", ".git/info/attributes"
+        or die "Couldn't open .git/info/attributes: $!";
+    
+    if ($ARGV{"--git-ls"} or $ARGV{"--git-list"}) {
+        print "$_\n" for grep defined, map m{
+            ^ (\S+) \s+ filter=freeindent
+        }x, @attrs;
+    }
+    elsif ($ARGV{"--git-add"}) {
+        for my $pat (grep { $_ ne "1" } @ARGV) {
+            push @attrs, "$pat filter=freeindent";
+        }
+    }
+    elsif ($ARGV{"--git-rm"}) {
+        @attrs = grep {
+            if (my ($pat) = $_ =~ m/^(\S+) \s+ filter=freeindent/) {
+                grep { $_ ne "1" and $_ eq $pat } @ARGV;
+            }
+            else {
+                undef
+            }
+        } @attrs;
+    }
+    elsif ($ARGV{"--git-config"}) {
+        system qq{ git config --global filter.freeindent.smudge '$0 --convert' };
+        system qq{ git config --global filter.freeindent.clean '$0 --restore' };
+    }
+    
+    untie @attrs;
+    exit;
+}
+
