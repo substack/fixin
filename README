@@ -1,4 +1,4 @@
-fixins - indent freely
+fixin - indent freely
 
 Automatically convert to and from your vim indentation preferences for files
 that have vim modelines. This is especially useful for managing indentation
