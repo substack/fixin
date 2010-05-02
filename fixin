@@ -1,8 +1,16 @@
 #!/usr/bin/env perl
 # James Halliday (http://substack.net)
 # vim:ts=4:sw=4:tw=80:et
+
+# TODO:
+# * guess indentation level for files without modelines (with --guess)
+# * parse per-file indentation preferences in .vimrc
+# * load in global /etc/vimrc
+# * better support for gvim
+
 use warnings;
 use strict;
+
 
 use 5.10.0;
 use Getopt::Casual;
