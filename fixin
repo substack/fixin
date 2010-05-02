@@ -7,29 +7,43 @@
 # * parse per-file indentation preferences in .vimrc
 # * load in global /etc/vimrc
 # * better support for gvim
+# * emacs
 
 use warnings;
 use strict;
-
 
 use 5.10.0;
 use Getopt::Casual;
 
 my $usage = "Usage:
-    $0 ( --convert | --restore ) OPTIONS ( file | - )
+    $0  OPTIONS FILE
         
-        Convert and restore files with vi modelines to your preferred
-        indentation style and back to the original formatting.
-        For now, it only converts leading whitespace.
-    
+        Convert and restore the leading whitespace in FILE to your preferred
+        indentation style.
+        
+        If file is omitted or is '-', use stdin.
+        
         Where OPTIONS are:
-            --vimrc=file - the location of the vimrc file to use
-                default: \$HOME/.vimrc
-            --et, --expandtab - expand tab preference; overrides vimrc
-            --ts, --tabstop - tab stop preference; overrides vimrc
+            --convert
+                Convert whitespace in a file with a modeline to preferred
+                format. (default action)
+            --restore
+                Inverse of --convert: revert from preferred whitespace to the
+                format in the modeline.
+            
+            --vimrc=file
+                use this vimrc file (default: \$HOME/.vimrc)
+                
+            --et, --expandtab
+                Set expand tab preference. (overrides vimrc)
+            --ts, --tabstop
+                Set tab stop preference. (overrides vimrc)
+             
+            --help, -h
+                Show this message.
 ";
 
-$ARGV{"--convert"} or $ARGV{"--restore"} or die $usage;
+($ARGV{"--help"} or $ARGV{"-h"}) and die $usage;
 $ARGV{"--vimrc"} //= "$ENV{HOME}/.vimrc";
 
 use Tie::File;
