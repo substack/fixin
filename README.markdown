@@ -1,9 +1,6 @@
 Overview
 ========
 
-fixin
------
-
 Insulate your superior whitespace preferences from the misguided preferences of
 others.
 
