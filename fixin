@@ -51,6 +51,8 @@ use Tie::File;
 my $filename = shift // "-";
 
 my @file;
+sub bail { print for grep defined, @file; exit }
+
 if ($filename eq "-") {
     @file = <>;
 }
@@ -87,11 +89,7 @@ for my $opts (grep defined, map $_ =~ $re, grep defined, @file[0..4]) {
         last;
     }
 }
-%modes || do {
-    # only process when modeline is found
-    print for grep defined, @file;
-    exit;
-};
+%modes || bail(); # only process when modeline is found
 
 # short-form aliases
 $modes{tabstop} = int($modes{tabstop} // $modes{ts} // 8);
@@ -115,37 +113,32 @@ unless (defined $ARGV{"--expandtab"} and defined $ARGV{"--tabstop"}) {
     untie @vimrc;
 }
 
-$prefs{expandtab} = $ARGV{"--expandtab"} // $prefs{expandtab} // $prefs{et};
+$prefs{expandtab} = $ARGV{"--expandtab"} // $prefs{expandtab} // $prefs{et} // 0;
 $prefs{tabstop} = int($ARGV{"--tabstop"} // $prefs{tabstop} // $prefs{ts} // 8);
 
-if ($prefs{expandtab} == $modes{expandtab}
-and $prefs{tabstop} == $modes{tabstop}) {
-    print for grep defined, @file;
-    exit;
+my (%from, %to);
+if ($ARGV{"--restore"}) {
+    %from = %prefs;
+    %to = %modes;
+}
+else {
+    %from = %modes;
+    %to = %prefs;
 }
 
-if ($ARGV{"--restore"}) {
-    # convert backwards for resets
-    my $prefs_r = { %prefs };
-    my $modes_r = { %modes };
-    %modes = %$prefs_r;
-    %prefs = %$modes_r;
-}
+my $fw = ($from{expandtab} ? " " x $from{tabstop} : "\t");
+my $tw = ($to{expandtab} ? " " x $to{tabstop} : "\t");
+$fw eq $tw and bail(); # indentation is the same, no need for processing
 
 (tied @file)->defer if $filename ne "-";
 for my $line (grep defined, @file) {
-    if ($prefs{expandtab}) {
-        my $mspaces = " " x $modes{tabstop};
-        my $pspaces = " " x $prefs{tabstop};
-        
-        1 while $line =~ s/^(\s*?)\t/$1$mspaces/;
-        
-        $line =~ s[^((?:$mspaces)+)]
-            [ $pspaces x ((length $1) / $modes{tabstop}) ]e;
+    if ($from{expandtab}) {
+        $line =~ s[^((?:$fw)+)][
+            $tw x (length($1) / $from{tabstop})
+        ]e;
     }
     else {
-        my $spaces = " " x $prefs{tabstop};
-        1 while $line =~ s/^(\s*?)$spaces/$1\t/
+        $line =~ s[^((?:$fw)+)][$tw x length($1)]e;
     }
 }
 (tied @file)->flush if $filename ne "-";
